@@ -1,0 +1,14 @@
+{
+    "folders": [
+        {
+            "path": "."
+        },
+        {
+            "path": "inference-ast"
+        },
+        {
+            "path": "inference-tts"
+        }
+    ],
+    "settings": {},
+}
