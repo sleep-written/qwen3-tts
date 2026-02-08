@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal, Optional
 
-EventType = Literal["standard", "system", "stderr", "warning", "log", "error"]
+EventType = Literal["standard", "stdout", "stderr"]
 
 @dataclass(frozen=True)
 class CLIJSON:

@@ -5,18 +5,40 @@ import { spawn } from 'node:child_process';
 
 export class Inference {
     #ndJson = new NDJSON();
+    #messageHandlers = new Map<
+        (o: NDJSONData | Error) => unknown,
+        (o: NDJSONData) => void
+    >();
 
     #path: string;
     get path(): string {
         return this.#path;
     }
 
-    onMessage(callback: (o: NDJSONData) => unknown): void {
-        this.#ndJson.on('message', callback);
+    onMessage(callback: (o: NDJSONData | Error) => unknown): void {
+        const handler = (data: NDJSONData): void => {
+            if (data.type === 'stderr') {
+                const error = new Error(data.message);
+                error.stack = data.message;
+                callback(error);
+                return;
+            }
+
+            callback(data);
+        };
+
+        this.#messageHandlers.set(callback, handler);
+        this.#ndJson.on('message', handler);
     }
 
-    offMessage(callback: (o: NDJSONData) => unknown): void {
-        this.#ndJson.off('message', callback);
+    offMessage(callback: (o: NDJSONData | Error) => unknown): void {
+        const handler = this.#messageHandlers.get(callback);
+        if (!handler) {
+            return;
+        }
+
+        this.#ndJson.off('message', handler);
+        this.#messageHandlers.delete(callback);
     }
 
     constructor(path: string) {

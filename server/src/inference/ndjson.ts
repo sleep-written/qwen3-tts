@@ -14,7 +14,7 @@ export class NDJSON extends EventEmitter<{
     #parse(line: string): NDJSONData {
         if (!line.trim()) {
             return {
-                type: 'raw',
+                type: 'stdout',
                 date: new Date(),
                 message: '',
             };
@@ -25,13 +25,10 @@ export class NDJSON extends EventEmitter<{
             const rawType = json?.type;
             const type: NDJSONData['type'] =
                 rawType === 'standard' ||
-                rawType === 'system'   ||
-                rawType === 'stderr'   ||
-                rawType === 'warning'  ||
-                rawType === 'log'      ||
-                rawType === 'error'
+                rawType === 'stdout'   ||
+                rawType === 'stderr'
                 ?   rawType
-                :   'raw';
+                :   'stdout';
 
             let date = typeof json?.date === 'string'
             ?   new Date(json.date)
@@ -53,7 +50,7 @@ export class NDJSON extends EventEmitter<{
             return out;
         } catch {
             return {
-                type: 'raw',
+                type: 'stdout',
                 date: new Date(),
                 message: line
             };

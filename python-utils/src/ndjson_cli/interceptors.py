@@ -1,6 +1,5 @@
 from __future__ import annotations
 import io
-import sys
 import threading
 from typing import Callable
 
@@ -64,33 +63,3 @@ class StreamInterceptor(io.TextIOBase):
             self._original.flush()
         except Exception:
             pass
-
-def install_warnings_hook(emit_warning: Callable[[str], None]) -> Callable[[], None]:
-    import warnings
-
-    old_showwarning = warnings.showwarning
-
-    def showwarning(message, category, filename, lineno, file=None, line=None):
-        text = f"{category.__name__}: {message} ({filename}:{lineno})"
-        emit_warning(text)
-
-    warnings.showwarning = showwarning
-
-    def uninstall() -> None:
-        warnings.showwarning = old_showwarning
-
-    return uninstall
-
-def install_excepthook(emit_error: Callable[[str], None]) -> Callable[[], None]:
-    old_hook = sys.excepthook
-
-    def hook(exctype, value, tb):
-        emit_error(f"Uncaught {exctype.__name__}: {value}")
-        old_hook(exctype, value, tb)
-
-    sys.excepthook = hook
-
-    def uninstall() -> None:
-        sys.excepthook = old_hook
-
-    return uninstall

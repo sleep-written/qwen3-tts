@@ -1,12 +1,8 @@
 export interface NDJSONData {
     type:
         'standard' |
-        'raw' |
-        'system' |
-        'stderr' |
-        'warning' |
-        'log' |
-        'error';
+        'stdout' |
+        'stderr';
 
     date: Date;
     message: string;

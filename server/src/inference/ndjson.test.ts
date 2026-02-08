@@ -26,7 +26,7 @@ test('Basic ndjson simulation', (t: test.TestContext) => {
                     new Date(Date.UTC(2026, 0, 2)).getTime()
                 );
 
-                t.assert.strictEqual(data[2].type, 'raw');
+                t.assert.strictEqual(data[2].type, 'stdout');
                 t.assert.strictEqual(data[2].message, 'caca');
 
                 resolve();
@@ -93,4 +93,3 @@ test('JSON split across two chunks', (t: test.TestContext) => {
         }
     });
 });
-

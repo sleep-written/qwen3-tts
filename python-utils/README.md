@@ -1,6 +1,6 @@
 # ndjson-cli
 
-Emit NDJSON events and optionally intercept stdout/stderr/warnings/logging.
+Emit NDJSON events and optionally intercept stdout/stderr.
 
 ## Example
 
