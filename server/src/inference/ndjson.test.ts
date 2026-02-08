@@ -26,9 +26,8 @@ test('Basic ndjson simulation', (t: test.TestContext) => {
                     new Date(Date.UTC(2026, 0, 2)).getTime()
                 );
 
-                t.assert.strictEqual(data[2].type, 'garbage');
-                t.assert.strictEqual(data[2].message, 'Raw line detected, cannot be parsed as JSON');
-                t.assert.strictEqual(data[2].payload, 'caca');
+                t.assert.strictEqual(data[2].type, 'raw');
+                t.assert.strictEqual(data[2].message, 'caca');
 
                 resolve();
             });
@@ -53,3 +52,45 @@ test('Basic ndjson simulation', (t: test.TestContext) => {
         }
     });
 });
+
+test('JSON split across two chunks', (t: test.TestContext) => {
+    const data: NDJSONData[] = [];
+    const ndJSON = new NDJSON();
+
+    return new Promise<void>((resolve, reject) => {
+        try {
+            ndJSON.on('message', json => data.push(json));
+            ndJSON.on('close', () => {
+                t.assert.strictEqual(data.length, 1);
+                t.assert.strictEqual(data[0].type, 'standard');
+                t.assert.strictEqual(data[0].message, 'split message');
+                t.assert.strictEqual(
+                    data[0].date.getTime(),
+                    new Date(Date.UTC(2026, 0, 15)).getTime()
+                );
+
+                resolve();
+            });
+
+            const jsonString = JSON.stringify({
+                type: 'standard' as NDJSONData['type'],
+                date: new Date(Date.UTC(2026, 0, 15)),
+                message: 'split message'
+            }) + '\n';
+
+            // Split the JSON string in half
+            const mid = Math.floor(jsonString.length / 2);
+            const firstHalf = jsonString.substring(0, mid);
+            const secondHalf = jsonString.substring(mid);
+
+            // Push each half separately
+            ndJSON.push(firstHalf);
+            ndJSON.push(secondHalf);
+
+            ndJSON.close();
+        } catch (err) {
+            reject(err);
+        }
+    });
+});
+

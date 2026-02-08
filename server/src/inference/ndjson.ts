@@ -14,7 +14,7 @@ export class NDJSON extends EventEmitter<{
     #parse(line: string): NDJSONData {
         if (!line.trim()) {
             return {
-                type: 'system',
+                type: 'raw',
                 date: new Date(),
                 message: '',
             };
@@ -31,7 +31,7 @@ export class NDJSON extends EventEmitter<{
                 rawType === 'log'      ||
                 rawType === 'error'
                 ?   rawType
-                :   'garbage';
+                :   'raw';
 
             let date = typeof json?.date === 'string'
             ?   new Date(json.date)
@@ -53,10 +53,9 @@ export class NDJSON extends EventEmitter<{
             return out;
         } catch {
             return {
-                type: 'garbage',
+                type: 'raw',
                 date: new Date(),
-                message: 'Raw line detected, cannot be parsed as JSON',
-                payload: line,
+                message: line
             };
         }
     }

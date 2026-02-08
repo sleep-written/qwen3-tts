@@ -1,7 +1,7 @@
 export interface NDJSONData {
     type:
         'standard' |
-        'garbage' |
+        'raw' |
         'system' |
         'stderr' |
         'warning' |
