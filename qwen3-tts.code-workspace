@@ -4,7 +4,10 @@
             "path": "."
         },
         {
-            "path": "inference-ast"
+            "path": "python-utils"
+        },
+        {
+            "path": "inference-asr"
         },
         {
             "path": "inference-tts"

@@ -1,3 +1,7 @@
+# For python
 venv
+__pycache__
+*.egg-info
+
 node_modules
 dist

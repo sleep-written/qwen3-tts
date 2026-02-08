@@ -1,0 +1,8 @@
+{
+    "python.terminal.activateEnvironment": true,
+    "python.analysis.typeCheckingMode": "standard",
+    "python-env.workspaceSearchPaths": [
+        "./venv/bin/python",
+        "./venv/Scripts/python.exe"
+    ]
+}
