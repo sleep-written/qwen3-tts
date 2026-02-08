@@ -1,0 +1,11 @@
+{
+  "type": "module",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "dependencies": {
+    "turbo": "^2.8.3",
+    "typescript": "^5.9.3"
+  }
+}
