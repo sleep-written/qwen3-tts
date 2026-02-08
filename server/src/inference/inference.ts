@@ -19,6 +19,10 @@ export class Inference {
         this.#ndJson.off('message', callback);
     }
 
+    removeAllListeners(): void {
+        this.#ndJson.removeAllListeners();
+    }
+
     constructor(path: string) {
         this.#path = path;
     }
@@ -30,7 +34,7 @@ export class Inference {
         
         if (flags) {
             Object.entries(flags).forEach(([key, value]) => {
-                spawnArgs.push(`${key}=${value}`);
+                spawnArgs.push(key, value);
             });
         }
 
