@@ -11,6 +11,12 @@
         },
         {
             "path": "inference-tts"
+        },
+        {
+            "path": "client"
+        },
+        {
+            "path": "server"
         }
     ],
     "settings": {},
