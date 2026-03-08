@@ -1,23 +1,14 @@
 {
-    "folders": [
-        {
-            "path": "."
-        },
-        {
-            "path": "python-utils"
-        },
-        {
-            "path": "inference-asr"
-        },
-        {
-            "path": "inference-tts"
-        },
-        {
-            "path": "client"
-        },
-        {
-            "path": "server"
-        }
-    ],
-    "settings": {},
+	"folders": [
+		{
+			"path": "./inference-asr"
+		},
+		{
+			"path": "./inference-tts"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {}
 }

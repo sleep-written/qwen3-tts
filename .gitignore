@@ -1,8 +1,0 @@
-# For python
-venv
-__pycache__
-*.egg-info
-
-# For node
-node_modules
-dist
