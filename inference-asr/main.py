@@ -1,28 +1,23 @@
-import torch
+from output_channel import OutputChannel
+events = OutputChannel()
+
 from pathlib import Path
-from qwen_asr import Qwen3ASRModel
-from transcribe import transcribe
+from asr import ASR
 
 def main():
-    model = Qwen3ASRModel.from_pretrained(
-        "Qwen/Qwen3-ASR-1.7B",
-        dtype=torch.bfloat16,
-        device_map="cuda:0",
-        # attn_implementation="flash_attention_2",
-        max_inference_batch_size=32, # Batch size limit for inference. -1 means unlimited. Smaller values can help avoid OOM.
-        max_new_tokens=256, # Maximum number of tokens to generate. Set a larger value for long audio input.
+    events.emit('main', 'Loading qwen3-asr model...')
+    asr = ASR()
+
+    events.emit('main', 'Transcripting audio file...')
+    out = asr.transcribe(
+        path=Path('../frieren.mp3').resolve()
     )
 
-    results = transcribe(
-        model,
-        [
-            { "path": Path('../frieren.mp3').resolve() }
-        ]
-    )
-
-    print(results[0].lang)
-    print(results[0].text)
-
+    events.emit('output', 'Transcription complete', {
+        'path': str(out.path),
+        'text': out.text,
+        'lang': out.lang
+    })
 
 if __name__ == "__main__":
     main()
