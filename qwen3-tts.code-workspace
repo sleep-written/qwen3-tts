@@ -7,6 +7,9 @@
 			"path": "./inference-tts"
 		},
 		{
+			"path": "./server"
+		},
+		{
 			"path": "."
 		}
 	],

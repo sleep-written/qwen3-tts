@@ -1,0 +1,12 @@
+{
+    "type": "module",
+    "scripts": {
+        "start": "bleed start src/index.ts",
+        "test": "node --import @bleed-believer/cli --test"
+    },
+    "devDependencies": {
+        "@bleed-believer/cli": "^0.0.4-alpha.0",
+        "@types/node": "^25.3.5",
+        "typescript": "^5.9.3"
+    }
+}
