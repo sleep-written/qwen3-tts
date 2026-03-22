@@ -1,1 +1,0 @@
-export type { WaveData } from './wave-data.js';

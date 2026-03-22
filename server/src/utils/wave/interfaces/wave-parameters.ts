@@ -1,6 +1,5 @@
-export interface WaveData {
+export interface WaveParameters {
     channels: number;
     sampleRate: number;
     bitsPerSample: number;
-    pcm: Buffer;
 }

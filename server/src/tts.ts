@@ -1,7 +1,9 @@
-import { InferenceASR, InferenceTTS } from './utils/daemon/index.js';
-import { WaveMerger } from './utils/wave-merger/index.js';
+import { readFile, rm, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
+
+import { InferenceASR, InferenceTTS } from './utils/daemon/index.js';
+import { Wave } from './utils/wave/index.js';
 
 export class TTS {
     #inputPath: string;
@@ -30,25 +32,38 @@ export class TTS {
         ]);
     }
 
-    async synthesize(outputPath: string, texts: string[]): Promise<void> {
+    async synthesize(outputPath: string, text: string): Promise<void> {
         if (!this.initialized) {
             throw new Error(`The TTS instance must be initialized prior to synthetize audio`);
         }
 
+        const parts = text
+            .replace(/[ \t]+/g, ' ')
+            .replace(/\n+/g, '\n')
+            .replace(/(?<=[^\.])\n/g, '.\n')
+            .split(/(?!<=\.)(?<=\.)(?: +|(?=\n))/)
+            .map(p => p.trimEnd());
+        
         const transcription = await this.#inferenceASR.transcribe(this.#inputPath);
-        const paths = await Promise.all(texts
+        const waves = await Promise.all(parts
             .map(text => ({ text, uuid: randomUUID() }))
             .map(({ text, uuid }) => ({ text,  path: `${tmpdir()}/output-${uuid}.wav` }))
             .map(({ text, path }) => this.#inferenceTTS
-                .synthesize(text, path, transcription)
-                .then(x => {
+                .synthesize(text.trim(), path, transcription)
+                .then(async x => {
                     console.info(`File "${x}" ready!`);
-                    return x;
+                    const data = await readFile(x);
+                    await rm(x);
+
+                    const wave = Wave.load(data);
+                    return text.startsWith('\n')
+                    ?   Wave.concat([ Wave.silence(wave, 500), wave ])
+                    :   wave;
                 })
             )
         );
 
-        const merger = new WaveMerger(paths);
-        await merger.merge(outputPath);
+        const wave = Wave.concat(waves);
+        await writeFile(outputPath, wave.build());
     }
 }
