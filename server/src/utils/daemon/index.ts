@@ -1,2 +1,2 @@
 export { Daemon } from './daemon.js';
-export { InferenceAsr } from './inference-asr.js';
+export { InferenceASR } from './inference-asr.js';

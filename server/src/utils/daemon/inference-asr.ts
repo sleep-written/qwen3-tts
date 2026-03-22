@@ -1,139 +1,124 @@
-import { EventEmitter } from 'node:events';
-import { resolve } from 'node:path';
+import type { Transcription } from './interfaces/index.js';
+
 import { Daemon } from './daemon.js';
+import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import EventEmitter from 'node:events';
 
-export interface DaemonObject {
-    on  (name: 'stdout', c: (m: string) => void): void;
-    off (name: 'stdout', c: (m: string) => void): void;
-    once(name: 'stdout', c: (m: string) => void): void;
-
-    on  (name: 'stderr', c: (m: string) => void): void;
-    off (name: 'stderr', c: (m: string) => void): void;
-    once(name: 'stderr', c: (m: string) => void): void;
-
-    get running(): boolean;
-
-    run (): void;
-    kill(): void;
-    send(message: string): void;
-    removeAllListeners(): void;
-}
-
-export class InferenceAsr extends EventEmitter<{
-    stdout: [ message: string ];
-    stderr: [ message: string ];
+export class InferenceASR extends EventEmitter<{
+    stdout: [ msg: string ];
+    stderr: [ msg: string ];
 }> {
-    #daemon: DaemonObject;
+    #daemon: Daemon;
 
-    get running(): boolean {
-        return this.#daemon.running;
-    }
-
-    constructor(daemon?: DaemonObject) {
+    constructor() {
         super();
-        this.#daemon = daemon ?? new Daemon(resolve(
-            import.meta.dirname,
-            '../../../../inference-asr'
-        ));
+        
+        const cwd = resolve(import.meta.dirname, '../../../../inference-asr');
+        this.#daemon = new Daemon(cwd);
     }
 
-    async run(): Promise<void> {
-        if (this.#daemon.running) {
-            throw new Error(`The inference-asr is already running`);
+    initialize(): Promise<void> {
+        if (this.#daemon.initialized) {
+            throw new Error('The `InferenceASR` instance is already initialized');
         }
 
         return new Promise<void>((resolve, reject) => {
-            const stdoutCallback = (m: string): void => {
+            const errorEvent = (err: Error) => {
+                this.#daemon.off('stdout', stdoutEvent);
+                this.#daemon.off('error', errorEvent);
+                reject(err);
+            };
+
+            const stdoutEvent = (msg: string) => {
                 try {
-                    const json = JSON.parse(m);
+                    const json = JSON.parse(msg);
                     if (json?.type === 'ready') {
-                        this.#daemon.off('stdout', stdoutCallback);
-                        this.#daemon.off('stderr', stderrCallback);
+                        this.#daemon.off('stdout', stdoutEvent);
+                        this.#daemon.off('error', errorEvent);
                         resolve();
                     }
-                } catch (err) {
-                    return;
-                }
-            };
-
-            const stderrCallback = (m: string): void => {
-                try {
-                    const json = JSON.parse(m);
-                    if (json?.type === 'error' && typeof json?.message === 'string') {
-                        this.#daemon.off('stdout', stdoutCallback);
-                        this.#daemon.off('stderr', stderrCallback);
-                        reject(new Error(json.message));
-                    }
                 } catch {
-                    return;
+                    // Nothing xd
                 }
             };
 
-            this.#daemon.on('stdout', stdoutCallback);
-            this.#daemon.on('stderr', stderrCallback);
-            this.#daemon.on('stdout', m => this.emit('stdout', m));
-            this.#daemon.on('stderr', m => this.emit('stderr', m));
+            this.#daemon.on('stdout', stdoutEvent);
+            this.#daemon.on('error', errorEvent);
 
-            try {
-                this.#daemon.run();
-            } catch (err) {
-                this.#daemon.removeAllListeners();
-                reject(err);
-            }
+            this.#daemon.on('stdout', msg => this.emit('stdout', msg));
+            this.#daemon.on('stderr', msg => this.emit('stderr', msg));
+            this.#daemon.initialize();
         });
     }
 
-    async transcribe(path: string, lang?: string): Promise<{ text: string; lang: string; }> {
-        return new Promise((resolve, reject) => {
-            const uuid = randomUUID();
-            const callback = (m: string): void => {
+    transcribe(path: string, lang?: string): Promise<Transcription> {
+        if (!this.#daemon.initialized) {
+            throw new Error('The `InferenceASR` instance must be initialized before to transcribe audio files');
+        }
+
+        const uuid = randomUUID();
+        return new Promise<Transcription>((resolve, reject) => {
+            const errorEvent = (err: Error) => {
+                this.#daemon.off('stdout', stdoutEvent);
+                this.#daemon.off('error', errorEvent);
+                reject(err);
+            };
+
+            const stdoutEvent = (msg: string) => {
                 try {
-                    const json = JSON.parse(m);
+                    const json = JSON.parse(msg);
                     if (
-                        typeof json?.uuid === 'string' &&
-                        typeof json?.text === 'string' &&
-                        typeof json?.lang === 'string' &&
-                        json.uuid === uuid
+                        json.uuid === uuid &&
+                        json.type === 'output'
                     ) {
-                        this.#daemon.off('stdout', callback);
-                        const { text, lang } = json;
-                        resolve({ text, lang });
+                        if (
+                            typeof json.text === 'string' &&
+                            typeof json.lang === 'string'
+                        ) {
+                            this.#daemon.off('stdout', stdoutEvent);
+                            this.#daemon.off('error', errorEvent);
+                            resolve({
+                                text: json.text,
+                                lang: json.lang
+                            });
+                        } else {
+                            const error = new Error(`The response requires an output text and a detected language`);
+                            this.#daemon.emit('error', error);
+                        }
                     }
                 } catch {
-                    return;
+                    // Nothing xd
                 }
             };
 
-            const stderrCallback = (m: string): void => {
-                try {
-                    const json = JSON.parse(m);
-                    if (json?.uuid === uuid && typeof json?.message === 'string') {
-                        this.#daemon.off('stdout', callback);
-                        this.#daemon.off('stderr', stderrCallback);
-                        reject(new Error(json.message));
-                    }
-                } catch {
-                    return;
-                }
-            };
-
-            try {
-
-                const text = JSON.stringify({ uuid, path, lang });
-                this.#daemon.on('stdout', callback);
-                this.#daemon.on('stderr', stderrCallback);
-                this.#daemon.send(text);
-
-            } catch (err) {
-                this.#daemon.off('stdout', callback);
-                this.#daemon.off('stderr', stderrCallback);
-                reject(err);
-            }
+            this.#daemon.on('stdout', stdoutEvent);
+            this.#daemon.on('error', errorEvent);
+            this.#daemon.send({ uuid, path, lang });
         });
     }
 
-    kill(): void {
-        this.#daemon.kill();
+    kill(): Promise<void> {
+        if (!this.#daemon.initialized) {
+            throw new Error('The `InferenceASR` instance must be initialized prior to be killed');
+        }
+
+        return new Promise<void>((resolve, reject) => {
+            const errorEvent = (err: Error) => {
+                this.#daemon.off('exit', exitEvent);
+                this.#daemon.off('error', errorEvent);
+                reject(err);
+            };
+
+            const exitEvent = () => {
+                this.#daemon.off('exit', exitEvent);
+                this.#daemon.off('error', errorEvent);
+                resolve();
+            }
+
+            this.#daemon.on('exit', exitEvent);
+            this.#daemon.on('error', errorEvent);
+            this.#daemon.kill();
+        });
     }
 }

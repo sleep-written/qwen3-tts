@@ -1,25 +1,28 @@
 import { resolve } from 'node:path';
-import { InferenceAsr } from './utils/daemon/index.js';
+import { InferenceASR } from './utils/daemon/index.js';
 
-const inferenceAsr = new InferenceAsr();
+const inferenceASR = new InferenceASR();
 
-try {
-    console.log('Loading model...');
-    await inferenceAsr.run();
-    
-    console.log('Transcribing audio...');
-    const out = await Promise.all([
-        inferenceAsr.transcribe(resolve('../frieren.mp3')),
-        inferenceAsr.transcribe(resolve('../coco.mp3'))
-    ])
+console.info('Loading inference model...');
+await inferenceASR.initialize();
 
-    console.log(out);
+const [ frieren, coco ] = await Promise.all([
+    (() => {
+        console.info('Transcribing "frieren.mp3"...');
+        return inferenceASR.transcribe(resolve(
+            import.meta.dirname,
+            '../../frieren.mp3'
+        ));
+    })(),
+    (() => {
+        console.info('Transcribing "coco.mp3"...');
+        return inferenceASR.transcribe(resolve(
+            import.meta.dirname,
+            '../../coco.mp3'
+        ));
+    })()
+]);
 
-} catch (err) {
-    console.error(err);
-
-} finally {
-    if (inferenceAsr.running) {
-        inferenceAsr.kill();
-    }
-}
+console.log('frieren message:', frieren);
+console.log('coco message:', coco);
+await inferenceASR.kill();
