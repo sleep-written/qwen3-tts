@@ -1,12 +1,13 @@
 [project]
-name = "inference-asr"
+name = "inference-tts"
 version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.12"
 dependencies = [
     "torch",
     "torchvision",
-    "qwen-asr",
+    "qwen-tts",
+    "soundfile",
 ]
 
 [[tool.uv.index]]
